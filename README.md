@@ -63,4 +63,81 @@ manager.RequestImageForAsset(assets[idx], new CoreGraphics.CGSize(assets[idx].Pi
 {
     rtn = result;
 });
+```  
+  
+  
+## Crash when handling permission problem  
+  
+In my work on uploading image, I found a crash that happen when I try to open camera on my iPhone but the permission is denied.  
+The [Plugin.media](https://github.com/jamesmontemagno/MediaPlugin) was applied to my code  
+  
 ```
+ await CrossMedia.Current.Initialize();  
+  
+ file = await CrossMedia.Current.TakePhotoAsync(new Plugin.Media.Abstractions.StoreCameraMediaOptions
+ {
+     Directory = "MyDir",
+     Name = $"MyApp{DateTime.UtcNow}.jpg",
+     PhotoSize = Plugin.Media.Abstractions.PhotoSize.MaxWidthHeight,
+     MaxWidthHeight = 1080,
+     CompressionQuality = 92,
+ });
+ ```  
+ The crash happened at the time calling ```TakePhotoAsync``` when camera permission is denied.  
+ To solve this problem, I surveyed and work on it for a long time and found [James](https://github.com/jamesmontemagno) in MS has pretty good work on this topic.  
+ By [PermissionPlugin](https://github.com/jamesmontemagno/PermissionsPlugin) with latest version (now 3.0.0.12)
+ combined with latest [Plugin.media](https://github.com/jamesmontemagno/MediaPlugin)  
+ (There are some issues such as [Version](https://github.com/jamesmontemagno/PermissionsPlugin/issues/105) that comes out when the version of two mutually-supported plugin not matched)  
+ The following code is my solution:  
+   
+   ```
+public async Task<PermissionStatus> CheckPermissionAsync()
+{
+   var permissionStatus = await CrossPermissions.Current.CheckPermissionStatusAsync(Permission.Camera);
+   
+   if (permissionStatus != PermissionStatus.Granted)
+   {
+       var askResult = await CrossPermissions.Current.RequestPermissionsAsync(Permission.Camera);
+       if (askResult.ContainsKey(Permission.Camera))
+       {
+           permissionStatus = askResult[Permission.Camera];
+       }
+   }
+   else
+   {
+       return permissionStatus;
+   }
+
+    if (permissionStatus != PermissionStatus.Granted)
+    {
+        bool result = await App.Instance.MainPage.DisplayAlert("No camera permission", "", "Go setting", "Cancel");
+        if (result)
+        {
+            CrossPermissions.Current.OpenAppSettings();
+        }
+     }
+
+   return permissionStatus;
+}
+  ```  
+  
+and you can use it like:  
+  
+```
+var status = await CheckPermissionAsync();
+            
+if (status == PermissionStatus.Granted)
+{
+    // Your capture method
+}
+```  
+  
+I found a interesting thing when debugging, iOS system will not ask second time if you deny the access.  
+Hence, By checking permission and redirect to setting page could solve the problem on both platform (in Xamarin.Forms)  
+There are some additional issues came out when using those plugins, such as [CurrentActivity](https://github.com/jamesmontemagno/CurrentActivityPlugin/blob/master/README.md) and some API usage.  
+However, the [PermissionPlugin](https://github.com/jamesmontemagno/PermissionsPlugin) has stated clearly.  
+  
+among them CurrentActivity is interesting for use code below in OnCreate(), I think it's a great way for not only debug bug some specific content usage.  
+```  
+Plugin.CurrentActivity.CrossCurrentActivity.Current.Init(this, bundle);
+```  
