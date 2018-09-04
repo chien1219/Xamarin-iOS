@@ -141,3 +141,59 @@ among them CurrentActivity is interesting for use code below in OnCreate(), I th
 ```  
 Plugin.CurrentActivity.CrossCurrentActivity.Current.Init(this, bundle);
 ```  
+  
+    
+## Toast Effect  
+  
+![Toast](https://i.stack.imgur.com/gX37X.png)  
+Toast is the bubble message that flash and disappear soon.  
+in Xamarin iOS, there are several plugin that support toast with different effect.  
+Now, Im gonna talk about two of them I have appied to my project.  
+For both platform, the [Dependency Service](https://docs.microsoft.com/xamarin/xamarin-forms/app-fundamentals/dependency-service/introduction) is needed, and the other part as well as interface are on my [Xamarin Android](https://github.com/chien1219/Android-Memory)  
+```  
+using MyProject.Interface;
+using MyProject.iOS.DependencyService;
+using GlobalToast;
+
+[assembly: Xamarin.Forms.Dependency(typeof(ToastHelperService))]
+namespace MyProject.iOS.DependencyService
+{
+    public class ToastHelperService : IToastHelper
+    {
+        // API of Android is fixed with 2 and 3.5 seconds, here for unitary
+        const double LONG_DELAY = 3500;
+        const double SHORT_DELAY = 2000;
+
+        // 1/5 of screen height margin from buttom.
+        float screenHeight = (float)Plugin.XamJam.Screen.CrossScreen.Current.Size.Height / 5;
+
+        public void LongAlert(string message)
+        {
+            ToastLayout toastLayout = new ToastLayout();
+            toastLayout.MarginBottom = screenHeight;
+            Toast.MakeToast(message).SetLayout(toastLayout).SetDuration(LONG_DELAY).Show();
+        }
+        public void ShortAlert(string message)
+        {
+            ToastLayout toastLayout = new ToastLayout();
+            toastLayout.MarginBottom = screenHeight;
+            Toast.MakeToast(message).SetLayout(toastLayout).SetDuration(SHORT_DELAY).Show();
+        }
+    }
+}
+```  
+  
+The above code makes the toast message appear on the 1/5 place on the screen from bottom.  
+and the nuget [Toast.IOS](https://www.nuget.org/packages/Toast.iOS/) is needed.  
+  
+The second way is  to use [BTProgressHUD](https://github.com/nicwise/BTProgressHUD)  
+
+  
+```
+using BigTed;
+.
+.
+.  
+BTProgressHUD.ShowToast("Hello from Toast");  
+```  
+But this way is a little bit constrained, with non-customized background, position (only three choice in its ENUM), so I did not choose this one as my decision since I want to show in the low position but bottom.  
