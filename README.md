@@ -197,3 +197,38 @@ using BigTed;
 BTProgressHUD.ShowToast("Hello from Toast");  
 ```  
 But this way is a little bit constrained, with non-customized background, position (only three choice in its ENUM), so I did not choose this one as my decision since I want to show in the low position but bottom.  
+  
+    
+## ScrollView scroll to top automatically
+  
+Same as stated in [issue](https://github.com/xamarin/Xamarin.Forms/issues/3465), In our app, when we scroll to bottom of a scrollview and there's some layout is going to be loading, the page, or the scroll view is going to scroll to the top automatically.  
+The following code is what we do on scrolled.  
+```
+private void OnScrolled(object sender, ScrolledEventArgs e)
+        {
+            ScrollView scrollView = sender as ScrollView;
+            double scrollingSpace = scrollView.ContentSize.Height - scrollView.Height;
+
+            if (scrollingSpace <= (e.ScrollY + 10)) // Touched bottom
+            {
+                AddNewImage();
+            }
+        }
+```
+I couldn't found any causing idea with this situation
+Hence, I add a ScrollTo actively to reduce the bounce back. Then everything seems to be good.  
+Though this is not properly solved but an electic way.  
+```
+double scrollY = 0;
+private void OnScroll(object sender, ScrolledEventArgs e)
+{
+    if (scrollY != 0 && e.ScrollY == 0)
+    {
+        MyScrollView.ScrollToAsync(x: 0, y: scrollY + 10, animated: false);
+    }
+    else
+    {
+        scrollY = e.ScrollY;
+    }
+}
+```
